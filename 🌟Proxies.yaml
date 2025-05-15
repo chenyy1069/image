@@ -1,0 +1,330 @@
+
+# 分组
+pr:
+  &pr {
+    type: select,
+    proxies:
+      [
+        ✨Proxies,
+        🇭🇰HongKong,
+        🇺🇲USA,
+        🇯🇵Japan,
+        🇹🇼Taiwan,
+        🇸🇬Singapore,
+        🇰🇷Korea,
+        🇬🇧UK,
+        🏁Other Regions,
+        🇺🇳All,
+        🔶AiFun,
+        🔶Cherry,
+        🔶KCY,
+        ➡️Direct,
+      ],
+  }
+# 延迟检测 URL
+p: &p
+  type: http
+  interval: 3600
+  health-check:
+    enable: true
+    url: http://cp.cloudflare.com/
+    interval: 600
+    timeout: 800
+
+
+
+use: &use
+  type: select
+  use:
+    - A-AiFun
+    - B-Cherry
+    - C-KCY
+
+proxy-providers:
+  A-AiFun:
+    <<: *p
+    path: ./proxy_provider/AiFun.yaml
+    url: "https://sbgfw.trafficmanager.net/api/v1/client/subscribe?token=a536683658f050ac0b6e7683846a11d9"
+    override:
+      additional-prefix: 'AiFun • '
+
+
+
+  B-Cherry:
+    <<: *p
+    path: ./proxy_provider/Cherry.yaml
+    url: "https://api.cherry-network.org/api/v1/client/subscribe?token=a2693c4da8210389dca4e71ec1b9215c"
+    override:
+      additional-prefix: 'Cherry • '
+      
+  C-KCY:
+    <<: *p
+    path: ./proxy_provider/KCY.yaml
+    url: "https://cdn.0be.xyz/api/userhome/rssusernodeext?subtype=0&subkey=afbe660b560b47fe90107e9502952348&inServerType=-1&shownodesubinfo=2&usenodetype=3"
+    override:
+      additional-prefix: 'KCY • '
+      
+
+
+
+rule-providers:
+
+  anti-AD:
+    type: http
+    behavior: domain
+    format: yaml
+
+    path: ./rule_provider/anti-AD.yaml
+    url: "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-clash.yaml?"
+    interval: 600
+
+  anti-AD-white:
+    type: http
+    behavior: domain
+    format: yaml
+    path: ./rule_provider/anti-AD-white.yaml
+    url: "https://raw.githubusercontent.com/privacy-protection-tools/dead-horse/master/anti-ad-white-for-clash.yaml?"
+    interval: 600
+
+
+mode: rule
+ipv6: true
+log-level: info
+allow-lan: true
+mixed-port: 7890
+unified-delay: true
+tcp-concurrent: true
+external-controller: :9090
+
+geodata-mode: true
+
+geox-url:
+  geoip: "https://hub.gitmirror.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
+  geosite: "https://hub.gitmirror.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://hub.gitmirror.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
+
+
+find-process-mode: strict
+
+
+keep-alive-interval: 1800
+
+
+global-client-fingerprint: random 
+
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+ntp:
+  enable: true
+  write-to-system: false
+  server: time.apple.com
+  port: 123
+  interval: 30
+
+# 域名嗅探
+sniffer:
+  enable: true
+  sniff:
+    TLS:
+      ports: [443, 8443]
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+
+# tun 模式
+tun:
+  enable: false  
+  stack: system  
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
+  auto-route: true
+  auto-detect-interface: true
+
+dns:
+  enable: true
+  listen: :1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 28.0.0.1/8
+  fake-ip-filter:
+    - '*'
+    - '+.lan'
+    - '+.local'
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 114.114.114.114
+    - '[2402:4e00::]'
+    - '[2400:3200::1]'
+  nameserver:
+    - 'tls://8.8.4.4#dns'
+    - 'tls://1.0.0.1#dns'
+    - 'tls://[2001:4860:4860::8844]#dns'
+    - 'tls://[2606:4700:4700::1001]#dns'
+  proxy-server-nameserver:
+    - https://doh.pub/dns-query
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+
+
+proxy-groups:
+
+
+  - {
+      name: ✨Proxies,
+      type: select,
+      proxies:
+        [🇭🇰HongKong, 🇺🇲USA, 🇯🇵Japan, 🇹🇼Taiwan, 🇸🇬Singapore, 🇰🇷Korea, 🇬🇧UK, 🏁Other Regions,🇺🇳All,🔶AiFun,🔶Cherry,🔶KCY, ➡️Direct]
+    ,icon: https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Rocket.png}
+    
+
+  - { name: 📍Server Checker, <<: *use ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available_1.png ,exclude-filter: 'Traffic|Expire|官网|Valid|Reset|过期|流量|备用|建议|直接连接|重置|到期|官方|域名|预计' }
+
+  - { name: DNS, <<: *pr ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/TIDAL.png}
+  - { name: AD Block, type: select, proxies: [REJECT, DIRECT, ✨Proxies] ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hijacking.png}
+  - { name: OpenAI, <<: *pr ,icon: https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/openai.png}
+  - { name: Apple, <<: *pr ,icon: https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/apple.png}
+  - { name: Google, <<: *pr ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png}
+  #- { name: Telegram, <<: *pr }
+  - { name: Twitter, <<: *pr ,icon: https://fastly.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/x.png}
+# - { name: Pixiv, <<: *pr }
+# - { name: ehentai, <<: *pr }
+  - {name: Bilibili, <<: *pr ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/bilibili.png}
+# - {name: 哔哩东南亚, <<: *pr}
+# - { name: 巴哈姆特, <<: *pr }
+  - { name: YouTube, <<: *pr ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png}
+#  - { name: Political, <<: *pr ,icon: https://chenyy1069.github.io/image/rfa.jpg}
+  - { name: FlClash, <<: *pr ,icon: https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/WiFi.png ,hidden: true}
+
+  
+  
+# - { name: NETFLIX, <<: *pr }
+# - { name: Spotify, <<: *pr }
+# - { name: Github, <<: *pr }
+# - { name: Steam, <<: *pr }
+# - { name: OneDrive, <<: *pr }
+  - {
+      name: Chinese Websites,
+      type: select,
+      proxies:
+        [
+          ➡️Direct,
+          ✨Proxies,
+          🇭🇰HongKong,
+          🇺🇲USA,
+          🇯🇵Japan,
+          🇹🇼Taiwan,
+          🇸🇬Singapore,
+          🇰🇷Korea,
+          🇬🇧UK,
+          🏁Other Regions,
+          🇺🇳All,
+          🔶AiFun,
+          🔶Cherry,
+          🔶KCY,
+        ],icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png
+    }
+  - { name: Other Websites, <<: *pr ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Filter.png}
+  
+  - {
+      name: ➡️Direct,
+      type: select,
+      proxies:
+        [
+          DIRECT,
+        ],icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China_Map.png, hidden: true
+    }
+
+  # 分隔,下面是地区分组
+  
+  - { name: 🇭🇰HongKong, <<: *use, filter: "(?i)hk|hongkong|hong kong|香港|🇭🇰" ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png}
+  
+  - { name: 🇺🇲USA, <<: *use, filter: "(?i)美国|unitedstates|united states|USA|🇺🇸" ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png}
+  
+  - { name: 🇯🇵Japan, <<: *use, filter: "(?i)日本|jp|japan|🇯🇵" ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png}
+  
+
+  - { name: 🇹🇼Taiwan, <<: *use, filter: "(?i)台湾|taiwan|🇹🇼|TW" ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png}
+
+  - { name: 🇸🇬Singapore, <<: *use, filter: "(?i)(新加坡|sg|singapore|🇸🇬)" ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png}
+
+  - { name: 🇰🇷Korea, <<: *use, filter: "(?i)(韩国|kr|🇰🇷)" ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png}
+  
+  - { name: 🇬🇧UK, <<: *use, filter: "(?i)(英国|Britain|🇬🇧)" ,icon: https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_Kingdom.png}
+
+  - {
+      name: 🏁Other Regions,
+      <<: *use,
+      filter: "(?i)^(?!.*(?:🇭🇰|🇯🇵|🇺🇸|🇰🇷|🇨🇳|🇸🇬|🇬🇧|🇹🇼|香港|新加坡|hk|hongkong|tw|taiwan|日本|jp|japan|韩国|kr|korea|美国|us|unitedstates|英国|Britain)).*", icon: https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/World_Map.png ,exclude-filter: 'Traffic|Expire|官网|Valid|Reset|过期|流量|备用|建议|直接连接|重置|到期|官方|域名|预计'
+    }
+  - { name: 🇺🇳All, <<: *use, icon: https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/United_Nations.png ,exclude-filter: 'Traffic|Expire|官网|Valid|Reset|过期|流量|备用|建议|直接连接|重置|到期|官方|域名|预计' }
+  - { name: 🔶AiFun, <<: *use, filter: "(?i)(AiFun)" ,icon: https://res.chenyy.cc/aifun.jpg ,exclude-filter: 'Traffic|Expire|官网|Valid|Reset|过期|流量|备用|建议|直接连接|重置|到期|官方|域名|预计' }
+  - { name: 🔶Cherry, <<: *use, filter: "(?i)(Cherry)" ,icon: https://res.chenyy.cc/cherrynet.jpg ,exclude-filter: 'Traffic|Expire|官网|Valid|Reset|过期|流量|备用|建议|直接连接|重置|到期|官方|域名|预计' }
+  - { name: 🔶KCY, <<: *use, filter: "(?i)(KCY)" ,icon: https://res.chenyy.cc/kcy.jpg ,exclude-filter: 'Traffic|Expire|官网|Valid|Reset|过期|流量|备用|建议|直接连接|重置|到期|官方|域名|预计' }
+
+
+
+
+rules:
+
+
+
+  - AND,((RULE-SET,anti-AD),(NOT,((RULE-SET,anti-AD-white)))),AD Block 
+# - GEOSITE,biliintl,哔哩东南亚
+  - GEOSITE,bilibili,Bilibili
+
+  # OpenAI (ChatGPT)
+  - DOMAIN-SUFFIX,chatgpt.com,OpenAI
+  - DOMAIN-SUFFIX,oaistatic.com,OpenAI
+  - DOMAIN-SUFFIX,oaiusercontent.com,OpenAI
+  - DOMAIN-SUFFIX,openai.com,OpenAI
+  - DOMAIN-SUFFIX,openai.com.cdn.cloudflare.net,OpenAI
+  - DOMAIN-SUFFIX,openaiapi-site.azureedge.net,OpenAI
+  - DOMAIN-SUFFIX,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net,OpenAI
+  - DOMAIN-SUFFIX,openaicomproductionae4b.blob.core.windows.net,OpenAI
+  - DOMAIN-SUFFIX,production-openaicom-storage.azureedge.net,OpenAI
+  - DOMAIN-SUFFIX,chatgpt.com,OpenAI
+  # OpenAI 跟踪域名
+  - DOMAIN-SUFFIX,o33249.ingest.sentry.io,AD Block
+  - DOMAIN-SUFFIX,openaicom.imgix.net,AD Block
+  - DOMAIN-KEYWORD,ipwho.is,FlClash
+  - DOMAIN-KEYWORD,api.ip.sb,FlClash
+  - DOMAIN-KEYWORD,ipapi.co,FlClash
+  - DOMAIN-KEYWORD,ipinfo,FlClash
+#  - DOMAIN-KEYWORD,rfa.org,Political
+#  - DOMAIN-KEYWORD,bbc.com,Political
+#  - DOMAIN-KEYWORD,apnews.com,Political
+  - GEOSITE,apple,Apple
+  - GEOSITE,apple-cn,Apple
+# - GEOSITE,ehentai,ehentai
+# - GEOSITE,github,Github
+  - GEOSITE,twitter,Twitter
+  - GEOSITE,youtube,YouTube
+  - GEOSITE,google,Google
+  - GEOSITE,google-cn,Google # Google CN 不走代理会导致香港等地区节点 Play Store 异常
+# - GEOSITE,telegram,Telegram
+# - GEOSITE,netflix,NETFLIX
+# - GEOSITE,bahamut,巴哈姆特
+# - GEOSITE,spotify,Spotify
+# - GEOSITE,pixiv,Pixiv
+# - GEOSITE,steam@cn,DIRECT
+# - GEOSITE,steam,Steam
+# - GEOSITE,onedrive,OneDrive
+  - GEOSITE,geolocation-!cn,Other Websites
+# - AND,(AND,(DST-PORT,443),(NETWORK,UDP)),(NOT,((GEOIP,CN))),REJECT # quic
+  - GEOIP,google,Google
+# - GEOIP,netflix,NETFLIX
+#- GEOIP,telegram,Telegram
+  - GEOIP,twitter,Twitter
+  - GEOSITE,CN,Chinese Websites
+  - GEOIP,CN,Chinese Websites
+  - MATCH,Other Websites
+
+  
+  
